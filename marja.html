@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marja (suunaga Kesklinn) väljumised</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 18px; }
+  h2 { margin-top: 0; }
+  table { border-collapse: collapse; width: 100%; max-width: 700px; }
+  th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
+  th { background: #f4f4f4; }
+  .muted { color: #666; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<h2>Marja (suunaga Kesklinn) - Väljumised</h2>
+<div id="status" class="muted">Loading…</div>
+<table id="tbl" style="display:none">
+  <thead>
+    <tr><th>Buss</th><th>Sihtpunkt</th><th>Saabumiseni</th></tr>
+  </thead>
+  <tbody id="body"></tbody>
+</table>
+
+<script>
+const url = "https://transport.tallinn.ee/siri-stop-departures.php?stopid=1116";
+
+function toMinSec(seconds) {
+  if (seconds == null || isNaN(seconds)) return "—";
+  if (seconds < 0) return "Kohe";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m} min ${s} s`;
+}
+
+function parseFeed(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const header = lines.find(l => l.startsWith("Transport"));
+  const headerParts = header.split(",");
+  const currentSeconds = parseInt(headerParts[4], 10) || 0;
+
+  const buses = [];
+  for (const line of lines) {
+    if (!line.startsWith("bus,")) continue;
+    const parts = line.split(",");
+    const route = parts[1];
+    const expected = parseInt(parts[2], 10);
+    const dest = parts[4];
+    const remaining = expected - currentSeconds;
+    buses.push({ route, dest, remaining });
+  }
+
+  // Keep only the closest departure for each line
+  const closest = {};
+  for (const b of buses) {
+    if (!closest[b.route] || b.remaining < closest[b.route].remaining) {
+      closest[b.route] = b;
+    }
+  }
+  // Convert object to array and sort by remaining time
+  return Object.values(closest).sort((a,b)=>a.remaining-b.remaining);
+}
+
+function render(rows) {
+  const body = document.getElementById("body");
+  const tbl = document.getElementById("tbl");
+  body.innerHTML = "";
+  if (!rows.length) {
+    document.getElementById("status").textContent = "No departures found.";
+    tbl.style.display = "none";
+    return;
+  }
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r.route}</td><td>${r.dest}</td><td>${toMinSec(r.remaining)}</td>`;
+    body.appendChild(tr);
+  }
+  const now = new Date();
+  document.getElementById("status").textContent = 
+      "Uuendatud: " + now.toLocaleTimeString('en-GB', { hour12: false });
+  tbl.style.display = "";
+}
+
+async function loadAndShow() {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const txt = await res.text();
+    const rows = parseFeed(txt);
+    render(rows);
+  } catch (e) {
+    document.getElementById("status").textContent = "Error: " + e.message;
+  }
+}
+
+loadAndShow();
+setInterval(loadAndShow, 1000); // refresh every 1s
+</script>
+</body>
+</html>
