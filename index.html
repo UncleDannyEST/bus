@@ -1,101 +1,63 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Marja (suunaga Kesklinn) väljumised</title>
-<style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 18px; }
-  h2 { margin-top: 0; }
-  table { border-collapse: collapse; width: 100%; max-width: 700px; }
-  th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
-  th { background: #f4f4f4; }
-  .muted { color: #666; font-size: 0.9em; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danieli kabinet</title>
+    <link rel="icon" href="res/favicon.png" type="image/png">
+    <link rel="stylesheet" href="fi.css">
 </head>
 <body>
-<h2>Marja (suunaga Kesklinn) - Väljumised</h2>
-<div id="status" class="muted">Loading…</div>
-<table id="tbl" style="display:none">
-  <thead>
-    <tr><th>Buss</th><th>Sihtpunkt</th><th>Saabumiseni</th></tr>
-  </thead>
-  <tbody id="body"></tbody>
-</table>
+
+<header>
+    <h1>Tere päevast, isand Daniel</h1>
+	<div class="clock-date-container">
+        <div class="clock" id="digital-clock"></div>
+        <div class="date" id="current-date"></div>
+	</div>
+    <a href="kodulehtfi.html"><img src="res/fi/kodulehelogo.png" alt="Logo" class="logo" id="logo"></a>
+</header>
 
 <script>
-const url = "https://transport.tallinn.ee/siri-stop-departures.php?stopid=1116";
+    function updateClock() {
+        var now = new Date();
+        var hours = now.getHours().toString().padStart(2, '0');
+        var minutes = now.getMinutes().toString().padStart(2, '0');
+        var seconds = now.getSeconds().toString().padStart(2, '0');
+        var timeString = hours + ':' + minutes + ':' + seconds;
+        document.getElementById('digital-clock').innerHTML = timeString;
 
-function toMinSec(seconds) {
-  if (seconds == null || isNaN(seconds)) return "—";
-  if (seconds < 0) return "Kohe";
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m} min ${s} s`;
-}
-
-function parseFeed(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const header = lines.find(l => l.startsWith("Transport"));
-  const headerParts = header.split(",");
-  const currentSeconds = parseInt(headerParts[4], 10) || 0;
-
-  const buses = [];
-  for (const line of lines) {
-    if (!line.startsWith("bus,")) continue;
-    const parts = line.split(",");
-    const route = parts[1];
-    const expected = parseInt(parts[2], 10);
-    const dest = parts[4];
-    const remaining = expected - currentSeconds;
-    buses.push({ route, dest, remaining });
-  }
-
-  // Keep only the closest departure for each line
-  const closest = {};
-  for (const b of buses) {
-    if (!closest[b.route] || b.remaining < closest[b.route].remaining) {
-      closest[b.route] = b;
+        var date = now.getDate().toString().padStart(2, '0');
+        var month = (now.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-based
+        var year = now.getFullYear();
+        var dateString = date + '.' + month + '.' + year;
+        document.getElementById('current-date').innerHTML = dateString;
     }
-  }
-  // Convert object to array and sort by remaining time
-  return Object.values(closest).sort((a,b)=>a.remaining-b.remaining);
-}
 
-function render(rows) {
-  const body = document.getElementById("body");
-  const tbl = document.getElementById("tbl");
-  body.innerHTML = "";
-  if (!rows.length) {
-    document.getElementById("status").textContent = "No departures found.";
-    tbl.style.display = "none";
-    return;
-  }
-  for (const r of rows) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${r.route}</td><td>${r.dest}</td><td>${toMinSec(r.remaining)}</td>`;
-    body.appendChild(tr);
-  }
-  const now = new Date();
-  document.getElementById("status").textContent = 
-      "Uuendatud: " + now.toLocaleTimeString('en-GB', { hour12: false });
-  tbl.style.display = "";
-}
+    // Update the clock and date every second
+    setInterval(updateClock, 1000);
 
-async function loadAndShow() {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const txt = await res.text();
-    const rows = parseFeed(txt);
-    render(rows);
-  } catch (e) {
-    document.getElementById("status").textContent = "Error: " + e.message;
-  }
-}
-
-loadAndShow();
-setInterval(loadAndShow, 1000); // refresh every 1s
+    // Initial call to display the clock and date immediately
+    updateClock();
 </script>
+
+
+<main>
+	<a href="https://pepa.epbe.ee/LIVE_FI/" class="button" target="_blank"><img src="res/fi/pepa.png" class="ikoon"><br>PePa</a>  
+    	<a href="https://fill.fi.ee" class="button" target="_blank"><img src="res/fi/fill.png" class="ikoon"><br>LiveLink</a>
+    	<a href="https://siseveeb.fi.ee/" class="button" target="_blank"><img src="res/fi/fi.png" class="ikoon"><br>Siseveeb</a>
+    	<a href="https://www.fi.ee/" class="button" target="_blank"><img src="res/fi/veeb.png" class="ikoon"><br>FI Välisveeb</a>
+    	<a href="https://vmp.e-toimik.ee/" class="button" target="_blank"><img src="res/fi/vmp.png" class="ikoon"><br>Väärteomenetlused</a>
+    	<a href="https://fiteab.fi.ee/" class="button" target="_blank"><img src="res/fi/fiteab.png" class="ikoon"><br>FI TEAB</a>
+	<a href="https://www.fi.ee/et/supervised-entities" class="button" target="_blank"><img src="res/fi/turg.png" class="ikoon"><br>Turuosaliste register</a>
+	<a href="https://ariregister.rik.ee/est" class="button" target="_blank"><img src="res/fi/ariregister.png" class="ikoon"><br>Äriregister</a>
+    	<a href="https://mtr.ttja.ee/juriidiline_isik" class="button" target="_blank"><img src="res/fi/mtr.png" class="ikoon"><br>MTR</a>
+	<a href="https://eservices.nasdaqcsd.com/login" class="button" target="_blank"><img src="res/fi/csd.png" class="ikoon"><br>Börsiregister</a>
+	<a href="https://siseveeb.politsei.ee/" class="button" target="_blank"><img src="res/fi/PPA.png" class="ikoon"><br>PPA Siseveeb</a>
+	<a href="https://www.epbe.ee/" class="button" target="_blank"><img src="res/fi/ep.png" class="ikoon"><br>EP Siseveeb</a>	
+	<a href="https://securitiesandmarketsauth.sharepoint.com/sites/ESMAEnforcementWorkingGroup" class="button" target="_blank"><img src="res/fi/esma.png" class="ikoon"><br>ESMA</a>
+    	<a href="https://www.ilmateenistus.ee/ilm/prognoosid/4-oopaeva-prognoos/" class="button" target="_blank"><img src="res/fi/ilm.png" class="ikoon"><br>Ilmaprognoos</a>
+	<a href="https://drive.google.com/drive/u/0/" class="button" target="_blank"><img src="res/drive.png" class="ikoon"><br>Drive</a>
+</main>
 </body>
 </html>
