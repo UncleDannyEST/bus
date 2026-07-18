@@ -14,6 +14,17 @@
   th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
   th { background: #f4f4f4; }
   .muted { color: #666; font-size: 0.9em; margin-top: 6px; display: block; }
+  .route-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    color: white;
+    font-weight: 600;
+    min-width: 2.2em;
+    text-align: center;
+  }
+  .route-bus { background: #00E1B4; }
+  .route-trol { background: #1170B3; }
 </style>
 </head>
 <body>
@@ -54,7 +65,8 @@ function parseFeed(text) {
     const expected = parseInt(parts[2], 10);
     const dest = parts[4];
     const remaining = expected - currentSeconds;
-    buses.push({ route, dest, remaining });
+    const type = line.startsWith("bus,") ? "bus" : "trol";
+    buses.push({ route, dest, remaining, type });
   }
 
   const closest = {};
@@ -78,7 +90,8 @@ function render(rows) {
   }
   for (const r of rows) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${r.route}</td><td>${r.dest}</td><td>${toMinSec(r.remaining)}</td>`;
+    const badgeClass = r.type === "trol" ? "route-trol" : "route-bus";
+    tr.innerHTML = `<td><span class="route-badge ${badgeClass}">${r.route}</span></td><td>${r.dest}</td><td>${toMinSec(r.remaining)}</td>`;
     body.appendChild(tr);
   }
   const now = new Date();
