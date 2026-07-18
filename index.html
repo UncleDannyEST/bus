@@ -18,7 +18,7 @@
 <div id="status" class="muted">Loading…</div>
 <table id="tbl" style="display:none">
   <thead>
-    <tr><th>Buss</th><th>Sihtpunkt</th><th>Saabumiseni</th></tr>
+    <tr><th>Liin</th><th>Sihtpunkt</th><th>Saabumiseni</th></tr>
   </thead>
   <tbody id="body"></tbody>
 </table>
@@ -42,7 +42,7 @@ function parseFeed(text) {
 
   const buses = [];
   for (const line of lines) {
-    if (!line.startsWith("bus,")) continue;
+    if (!line.startsWith("bus,") && !line.startsWith("trol,")) continue;
     const parts = line.split(",");
     const route = parts[1];
     const expected = parseInt(parts[2], 10);
