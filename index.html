@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Marja (suunaga Kesklinn) väljumised</title>
+<title>Peatuste graafik</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 18px; }
   h2 { margin-top: 0; }
+  .section-heading { margin-top: 28px; }
   table { border-collapse: collapse; width: 100%; max-width: 700px; }
   th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
   th { background: #f4f4f4; }
@@ -26,16 +27,42 @@
 </head>
 <body>
 <h2>Marja (suunaga Kesklinn) - Väljumised</h2>
-<div id="status" class="muted">Loading…</div>
-<table id="tbl" style="display:none">
+<div id="marja-status" class="muted">Loading…</div>
+<table id="marja-table" style="display:none">
   <thead>
     <tr><th>Liin</th><th>Sihtpunkt</th><th>Saabumiseni</th></tr>
   </thead>
-  <tbody id="body"></tbody>
+  <tbody id="marja-body"></tbody>
+</table>
+
+<h2 class="section-heading">Estonia (suunaga Mustamäe) - Väljumised</h2>
+<div id="estonia-status" class="muted">Loading…</div>
+<table id="estonia-table" style="display:none">
+  <thead>
+    <tr><th>Liin</th><th>Sihtpunkt</th><th>Saabumiseni</th></tr>
+  </thead>
+  <tbody id="estonia-body"></tbody>
 </table>
 
 <script>
-const url = "https://transport.tallinn.ee/siri-stop-departures.php?stopid=1116";
+const stops = [
+  {
+    urls: ["https://transport.tallinn.ee/siri-stop-departures.php?stopid=1116"],
+    statusId: "marja-status",
+    tableId: "marja-table",
+    bodyId: "marja-body"
+  },
+  {
+    urls: [
+      "https://transport.tallinn.ee/siri-stop-departures.php?stopid=14969",
+      "https://transport.tallinn.ee/siri-stop-departures.php?stopid=1628"
+    ],
+    routes: ["16", "81"],
+    statusId: "estonia-status",
+    tableId: "estonia-table",
+    bodyId: "estonia-body"
+  }
+];
 
 function toMinSec(seconds) {
   if (seconds == null || isNaN(seconds)) return "—";
@@ -63,23 +90,27 @@ function parseFeed(text) {
     buses.push({ route, dest, remaining, type });
   }
 
-  // Keep only the closest departure for each line
+  return buses;
+}
+
+function closestByRoute(buses) {
+  // Keep only the closest departure for each line across all fetched feeds
   const closest = {};
   for (const b of buses) {
     if (!closest[b.route] || b.remaining < closest[b.route].remaining) {
       closest[b.route] = b;
     }
   }
-  // Convert object to array and sort by remaining time
   return Object.values(closest).sort((a,b)=>a.remaining-b.remaining);
 }
 
-function render(rows) {
-  const body = document.getElementById("body");
-  const tbl = document.getElementById("tbl");
+function render(rows, config) {
+  const body = document.getElementById(config.bodyId);
+  const tbl = document.getElementById(config.tableId);
+  const status = document.getElementById(config.statusId);
   body.innerHTML = "";
   if (!rows.length) {
-    document.getElementById("status").textContent = "No departures found.";
+    status.textContent = "No departures found.";
     tbl.style.display = "none";
     return;
   }
@@ -90,25 +121,30 @@ function render(rows) {
     body.appendChild(tr);
   }
   const now = new Date();
-  document.getElementById("status").textContent = 
+  status.textContent =
       "Uuendatud: " + now.toLocaleTimeString('en-GB', { hour12: false });
   tbl.style.display = "";
 }
 
-async function loadAndShow() {
+async function loadAndShow(config) {
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const txt = await res.text();
-    const rows = parseFeed(txt);
-    render(rows);
+    const responses = await Promise.all(config.urls.map(url => fetch(url)));
+    for (const res of responses) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+    }
+    const feeds = await Promise.all(responses.map(res => res.text()));
+    const rows = closestByRoute(feeds.flatMap(parseFeed))
+      .filter(row => !config.routes || config.routes.includes(row.route));
+    render(rows, config);
   } catch (e) {
-    document.getElementById("status").textContent = "Error: " + e.message;
+    document.getElementById(config.statusId).textContent = "Error: " + e.message;
   }
 }
 
-loadAndShow();
-setInterval(loadAndShow, 1000); // refresh every 1s
+for (const config of stops) {
+  loadAndShow(config);
+  setInterval(() => loadAndShow(config), 1000); // refresh every 1s
+}
 </script>
 </body>
 </html>
